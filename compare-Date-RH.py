@@ -1,57 +1,34 @@
 import pandas as pd
-from openpyxl import load_workbook
-from datetime import datetime
 from google.colab import files
 
-# Define the target date for comparison
-target_date = datetime.strptime('1/12/2023', "%d/%m/%Y").date()
-
-# Upload the Excel file
+# Upload the Excel file from the local drive
 uploaded = files.upload()
 
-# Load the Excel file
-file_name = list(uploaded.keys())[0]  # Get the uploaded file name
-workbook = load_workbook(file_name)
+# Get the uploaded file name
+file_name = list(uploaded.keys())[0]
 
-# Loop through each sheet
-for sheet_name in workbook.sheetnames:
-    sheet = workbook[sheet_name]
+# Initialize a list to store the results
+different_values_list = []
 
-    # Step 1: Search for the cell with "1/12/2023" and save the row
-    definedrow = None
-    for row in range(1, sheet.max_row + 1):
-        for col in range(1, sheet.max_column + 1):
-            cell = sheet.cell(row=row, column=col).value
+# Load the Excel file using pandas
+excel_file = pd.ExcelFile(file_name)
 
-            # Convert cell value to a date if possible
-            if isinstance(cell, str):
-                try:
-                    cell_date = datetime.strptime(cell, "%d/%m/%Y").date()
-                except ValueError:
-                    continue
-            elif isinstance(cell, datetime):
-                cell_date = cell.date()
-            else:
-                continue
+# Loop through each sheet in the Excel file
+for sheet_name in excel_file.sheet_names:
+    # Read the sheet into a DataFrame
+    df = pd.read_excel(excel_file, sheet_name=sheet_name)
 
-            # Check if the cell date matches the target date
-            if cell_date == target_date:
-                definedrow = row  # Save the row number
-                break  # Exit the loop after finding the target date
-        if definedrow is not None:
-            break
+    # Loop through each row starting from the third row
+    for index, row in df.iloc[2:].iterrows():
+        # Get the values from the second column to the last column
+        values = row[1:].dropna().tolist()
 
-    # Step 2: Clear all values in the defined row
-    if definedrow is not None:
-        for col in range(1, sheet.max_column + 1):
-            sheet.cell(row=definedrow, column=col).value = None
+        # Check if all values are the same
+        if len(set(values)) > 1:
+            # If there are different values, add the sheet name and first column value to the list
+            different_values_list.append((sheet_name, row[0]))
 
-# Save the modified workbook
-new_file_name = 'modified_' + file_name
-workbook.save(new_file_name)
-
-# Download the modified workbook
-files.download(new_file_name)
-
-# Output the defined row for verification
-print(f'Defined row with the target date "1/12/2023": {definedrow}')
+# Output the list of rows with different values
+print("Rows with different values:")
+for entry in different_values_list:
+    print(f"Sheet: {entry[0]}, First Column Value: {entry[1]}")
