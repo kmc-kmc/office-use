@@ -28,7 +28,11 @@ for sheet_name in excel_file.sheet_names:
             # If there are different values, add the sheet name and first column value to the list
             different_values_list.append((sheet_name, row[0]))
 
-# Output the list of rows with different values
-print("Rows with different values:")
-for entry in different_values_list:
-    print(f"Sheet: {entry[0]}, First Column Value: {entry[1]}")
+# Create a DataFrame from the list of different values
+comparison_df = pd.DataFrame(different_values_list, columns=["Sheet", "Date"])
+
+# Save the DataFrame to a new Excel file
+comparison_df.to_excel("comparison.xlsx", index=False)
+
+# Download the new Excel file
+files.download("comparison.xlsx")
